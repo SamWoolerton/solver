@@ -1,9 +1,7 @@
 module Main where
 
 import Prelude
--- import App.AppMain as AppMain
--- import App.Input as AppMain
-import App.WordsList as AppMain
+import App.WordsList as WordsList
 import Effect (Effect)
 import Effect.Random (randomInt)
 import Halogen.Aff as HA
@@ -18,7 +16,7 @@ main = do
   answer <- get_random_word
   HA.runHalogenAff do
     body <- HA.awaitBody
-    runUI AppMain.component { answer } body
+    runUI WordsList.component { answer } body
 
 get_random_word :: Effect Logic.Word
 get_random_word = do
