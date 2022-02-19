@@ -3,45 +3,42 @@ module App.WordsList where
 import Prelude
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Logic as Logic
 import Words as Words
 
+type Input
+  = { answer :: Logic.Word }
+
 type State
-  = { count :: Int }
+  = { answer :: Logic.Word }
 
-data Action
-  = Increment
-  | Decrement
-
-component :: forall q i o m. H.Component q i o m
+component :: forall q o m. H.Component q Input o m
 component =
   H.mkComponent
-    { initialState: \_ -> { count: 0 }
+    { initialState: identity
     , render
-    , eval: H.mkEval H.defaultEval { handleAction = handleAction }
+    , eval: H.mkEval H.defaultEval
     }
 
-render :: forall cs m. State -> H.ComponentHTML Action cs m
+render :: forall a cs m. State -> H.ComponentHTML a cs m
 render state =
-  HH.div
-    [ HP.classes [ HH.ClassName "flex flex-wrap w-full" ]
+  HH.div_
+    [ HH.div_ [ HH.text $ "Answer is " <> state.answer ]
+    , HH.div_ [ HH.text $ "Guess is " <> guess ]
+    , HH.div_ [ HH.text $ "Score is " <> show scored.score.fully_correct <> " fully correct and " <> show scored.score.partially_correct <> " partially correct." ]
+    , HH.div
+        [ HP.classes [ HH.ClassName "flex flex-wrap w-full" ]
+        ]
+        ( map
+            (\w -> HH.span [ HP.classes [ HH.ClassName "m-1" ] ] [ HH.text w ])
+            $ words_list
+        )
     ]
-    ( map
-        (\w -> HH.span [ HP.classes [ HH.ClassName "m-1" ] ] [ HH.text w ])
-        $ words_list
-    )
+  where
+  scored = Logic.score_guess guess state.answer
 
-handleAction :: forall cs o m. Action → H.HalogenM State Action cs o m Unit
-handleAction = case _ of
-  Increment -> H.modify_ \st -> st { count = st.count + 1 }
-  Decrement -> H.modify_ \st -> st { count = st.count - 1 }
+  words_list = Logic.filter_words scored Words.valid_words
 
-answer = Logic.correct_word
-
+guess ∷ Logic.Word
 guess = "clamp"
-
-scored = Logic.score_guess guess answer
-
-words_list = Logic.filter_words scored Words.valid_words

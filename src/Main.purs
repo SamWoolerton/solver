@@ -13,4 +13,4 @@ main :: Effect Unit
 main =
   HA.runHalogenAff do
     body <- HA.awaitBody
-    runUI AppMain.component unit body
+    runUI AppMain.component { answer: "crust" } body

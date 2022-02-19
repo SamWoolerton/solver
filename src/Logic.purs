@@ -19,9 +19,6 @@ type Score
     , partially_correct :: Int
     }
 
-correct_word :: Word
-correct_word = "crest"
-
 valid_words :: Array Word
 valid_words = Words.valid_words
 
@@ -31,9 +28,6 @@ validate_guess word = correct_length && acceptable_word
   correct_length = length (toCharArray word) == 5
 
   acceptable_word = elem word Words.accepted_words
-
-is_correct_word :: Word -> Boolean
-is_correct_word word = word == correct_word
 
 is_correct_guess :: CheckedGuess -> Boolean
 is_correct_guess checked_guess = checked_guess.score.fully_correct == 5
