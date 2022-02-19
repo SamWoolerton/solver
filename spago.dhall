@@ -7,6 +7,7 @@
   , "maybe"
   , "prelude"
   , "psci-support"
+  , "random"
   , "stringutils"
   ]
 , packages = ./packages.dhall

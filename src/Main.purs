@@ -5,12 +5,26 @@ import Prelude
 -- import App.Input as AppMain
 import App.WordsList as AppMain
 import Effect (Effect)
+import Effect.Random (randomInt)
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
+import Data.Array (length, unsafeIndex)
+import Partial.Unsafe (unsafePartial)
+import Words as Words
+import Logic as Logic
 
--- import Words
 main :: Effect Unit
-main =
+main = do
+  answer <- get_random_word
   HA.runHalogenAff do
     body <- HA.awaitBody
-    runUI AppMain.component { answer: "crust" } body
+    runUI AppMain.component { answer } body
+
+get_random_word :: Effect Logic.Word
+get_random_word = do
+  random_int <- randomInt 0 max_words_index
+  pure $ get_at_index random_int
+  where
+  max_words_index = (length Words.valid_words) - 1
+
+  get_at_index n = unsafePartial $ unsafeIndex Words.valid_words n
