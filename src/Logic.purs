@@ -9,6 +9,9 @@ import Words as Words
 type Word
   = String
 
+type WordList
+  = Array Word
+
 type CheckedGuess
   = { guess :: Word
     , score :: Score
@@ -19,7 +22,7 @@ type Score
     , partially_correct :: Int
     }
 
-valid_words :: Array Word
+valid_words :: WordList
 valid_words = Words.valid_words
 
 validate_guess :: Word -> Boolean
@@ -27,12 +30,12 @@ validate_guess word = correct_length && acceptable_word
   where
   correct_length = length (toCharArray word) == 5
 
-  acceptable_word = elem word Words.accepted_words
+  acceptable_word = elem word Words.all_words
 
 is_correct_guess :: CheckedGuess -> Boolean
 is_correct_guess checked_guess = checked_guess.score.fully_correct == 5
 
-filter_words :: CheckedGuess -> Array Word -> Array Word
+filter_words :: CheckedGuess -> WordList -> WordList
 filter_words { guess, score } previous_words = filter filter_fn previous_words
   where
   filter_fn w = case score of
