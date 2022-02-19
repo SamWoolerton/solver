@@ -33,18 +33,18 @@ is_correct_guess :: CheckedGuess -> Boolean
 is_correct_guess checked_guess = checked_guess.score.fully_correct == 5
 
 filter_words :: CheckedGuess -> Array Word -> Array Word
-filter_words { guess: g, score: s } previous_words = filter filter_fn previous_words
+filter_words { guess, score } previous_words = filter filter_fn previous_words
   where
-  filter_fn w = case s of
+  filter_fn w = case score of
     { fully_correct: 0, partially_correct: 0 } -> not $ any char_in_guess (toCharArray w)
-    _ -> (score_guess g w).score == s
+    _ -> (score_guess guess w).score == score
 
-  char_in_guess c = elem c $ toCharArray g
+  char_in_guess c = elem c $ toCharArray guess
 
 score_guess :: Word -> Word -> CheckedGuess
-score_guess word answer = { guess: word, score: { fully_correct: exact_score, partially_correct: 0 } }
+score_guess guess answer = { guess, score: { fully_correct, partially_correct: 0 } }
   where
-  exact_score = length $ filter identity $ check_word_exact word answer
+  fully_correct = length $ filter identity $ check_word_exact guess answer
 
 check_word_exact :: Word -> Word -> Array Boolean
 check_word_exact word answer = mapWithIndex (\i c -> check_letter_exact i c answer) (toCharArray word)
