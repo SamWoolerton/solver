@@ -1,8 +1,9 @@
 module Logic where
 
 import Prelude
-import Data.Array (any, elem, filter, length, mapWithIndex)
+import Data.Array (any, elem, filter, length, mapWithIndex, nub)
 import Data.Maybe (Maybe(..))
+import Data.String (Pattern(..), contains)
 import Data.String.Utils (charAt, toCharArray)
 import Words as Words
 
@@ -45,14 +46,39 @@ filter_words { guess, score } previous_words = filter filter_fn previous_words
   char_in_guess c = elem c $ toCharArray guess
 
 score_guess :: Word -> Word -> CheckedGuess
-score_guess guess answer = { guess, score: { fully_correct, partially_correct: 0 } }
+score_guess guess answer = { guess, score: { fully_correct, partially_correct } }
   where
-  fully_correct = length $ filter identity $ check_word_exact guess answer
+  count_true arr = length $ filter identity arr
+
+  fully_correct = count_true $ check_word_exact guess answer
+
+  partially_correct = count_true $ check_word_partial guess answer
 
 check_word_exact :: Word -> Word -> Array Boolean
-check_word_exact word answer = mapWithIndex (\i c -> check_letter_exact i c answer) (toCharArray word)
+check_word_exact guess answer = mapWithIndex (\i c -> check_letter_exact i c answer) (toCharArray guess)
+
+check_word_partial :: Word -> Word -> Array Boolean
+check_word_partial guess answer = fn guess answer
+  where
+  guess_letters = (toCharArray guess)
+
+  has_duplicates = (length guess_letters) == (length $ nub guess_letters)
+
+  fn = if has_duplicates then check_word_partial_dups else check_word_partial_no_dups
 
 check_letter_exact :: Int -> String -> Word -> Boolean
 check_letter_exact i c answer = Just c == answer_char
   where
   answer_char = charAt i answer
+
+-- TODO:
+check_word_partial_dups :: Word -> Word -> Array Boolean
+check_word_partial_dups = check_word_partial_no_dups
+
+check_word_partial_no_dups :: Word -> Word -> Array Boolean
+check_word_partial_no_dups guess answer = mapWithIndex (\i c -> check_letter_partial_no_dups i c answer) (toCharArray guess)
+
+check_letter_partial_no_dups :: Int -> String -> Word -> Boolean
+check_letter_partial_no_dups i c answer = not exact && contains (Pattern c) answer
+  where
+  exact = check_letter_exact i c answer

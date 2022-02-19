@@ -36,8 +36,9 @@ render state =
         , HE.onValueInput InputEntered
         , HP.value state.guess
         , HP.required true
+        , HP.classes [ HH.ClassName "bg-gray-100 p-2 mr-3" ]
         ]
-    , HH.button [ HE.onClick \_ -> SubmitGuess ] [ HH.text "Check guess" ]
+    , HH.button [ HE.onClick \_ -> SubmitGuess, HP.classes [ HH.ClassName "bg-gray-700 text-white px-3 py-2" ] ] [ HH.text "Check guess" ]
     , HH.div_ [ HH.text $ "Answer is " <> state.answer ]
     , HH.div_
         ( map
