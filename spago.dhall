@@ -1,5 +1,14 @@
-{ name = "halogen-project"
-, dependencies = [ "console", "effect", "halogen", "psci-support" ]
+{ name = "wordle-mastermind-solver"
+, dependencies =
+  [ "arrays"
+  , "console"
+  , "effect"
+  , "halogen"
+  , "maybe"
+  , "prelude"
+  , "psci-support"
+  , "stringutils"
+  ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, sources = [ "src/**/*.purs" ]
 }

@@ -6,7 +6,7 @@ module App.AppMain
   ) where
 
 import Prelude
-import App.Button as Button
+-- import App.Button as Button
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
