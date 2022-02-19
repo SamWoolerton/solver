@@ -32,6 +32,9 @@ type Score
     , partially_correct :: Int
     }
 
+type Guess
+  = { text :: Word, has_dups :: Boolean, chars :: Array String }
+
 validate_guess :: Word -> Boolean
 validate_guess word = correct_length && acceptable_word
   where
@@ -45,38 +48,40 @@ is_correct_guess checked_guess = checked_guess.score.fully_correct == 5
 filter_words :: CheckedGuess -> WordList -> WordList
 filter_words { guess, score } previous_words = filter filter_fn previous_words
   where
-  has_dups = guess_has_duplicates guess
+  processed_guess = preprocess_guess guess
 
-  filter_fn w = case score of
-    { fully_correct: 0, partially_correct: 0 } -> not $ any char_in_guess (toCharArray w)
-    _ -> (score_guess_impl guess w has_dups).score == score
+  filter_fn word = case score of
+    { fully_correct: 0, partially_correct: 0 } -> not $ any char_in_guess (toCharArray word)
+    _ -> (score_guess_impl processed_guess word).score == score
 
-  char_in_guess c = elem c $ toCharArray guess
+  char_in_guess c = elem c processed_guess.chars
 
 score_guess :: Word -> Word -> CheckedGuess
-score_guess guess answer = score_guess_impl guess answer $ guess_has_duplicates guess
+score_guess guess answer = score_guess_impl (preprocess_guess guess) answer
 
-guess_has_duplicates :: Word -> Boolean
-guess_has_duplicates guess = (length guess_letters) == (length $ nub guess_letters)
+preprocess_guess :: Word -> Guess
+preprocess_guess guess = { text: guess, has_dups, chars: letters }
   where
-  guess_letters = (toCharArray guess)
+  letters = (toCharArray guess)
 
-score_guess_impl :: Word -> Word -> Boolean -> CheckedGuess
-score_guess_impl guess answer guess_has_dups = { guess, score: { fully_correct, partially_correct } }
+  has_dups = (length letters) == (length $ nub letters)
+
+score_guess_impl :: Guess -> Word -> CheckedGuess
+score_guess_impl guess answer = { guess: guess.text, score: { fully_correct, partially_correct } }
   where
   count_true arr = length $ filter identity arr
 
   fully_correct = count_true $ check_word_exact guess answer
 
-  partially_correct = count_true $ check_word_partial guess answer guess_has_dups
+  partially_correct = count_true $ check_word_partial guess answer
 
-check_word_exact :: Word -> Word -> Array Boolean
-check_word_exact guess answer = mapWithIndex (\i c -> check_letter_exact i c answer) (toCharArray guess)
+check_word_exact :: Guess -> Word -> Array Boolean
+check_word_exact guess answer = mapWithIndex (\i c -> check_letter_exact i c answer) guess.chars
 
-check_word_partial :: Word -> Word -> Boolean -> Array Boolean
-check_word_partial guess answer guess_has_dups = fn guess answer
+check_word_partial :: Guess -> Word -> Array Boolean
+check_word_partial guess answer = fn guess answer
   where
-  fn = if guess_has_dups then check_word_partial_dups else check_word_partial_no_dups
+  fn = if guess.has_dups then check_word_partial_dups else check_word_partial_no_dups
 
 check_letter_exact :: Int -> String -> Word -> Boolean
 check_letter_exact i c answer = Just c == answer_char
@@ -84,11 +89,11 @@ check_letter_exact i c answer = Just c == answer_char
   answer_char = charAt i answer
 
 -- TODO:
-check_word_partial_dups :: Word -> Word -> Array Boolean
+check_word_partial_dups :: Guess -> Word -> Array Boolean
 check_word_partial_dups = check_word_partial_no_dups
 
-check_word_partial_no_dups :: Word -> Word -> Array Boolean
-check_word_partial_no_dups guess answer = mapWithIndex (\i c -> check_letter_partial_no_dups i c answer) (toCharArray guess)
+check_word_partial_no_dups :: Guess -> Word -> Array Boolean
+check_word_partial_no_dups guess answer = mapWithIndex (\i c -> check_letter_partial_no_dups i c answer) guess.chars
 
 check_letter_partial_no_dups :: Int -> String -> Word -> Boolean
 check_letter_partial_no_dups i c answer = not exact && contains (Pattern c) answer
