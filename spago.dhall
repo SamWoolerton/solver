@@ -4,10 +4,14 @@
   , "console"
   , "effect"
   , "halogen"
+  , "lists"
   , "maybe"
+  , "ordered-collections"
+  , "partial"
   , "prelude"
   , "psci-support"
   , "random"
+  , "strings"
   , "stringutils"
   ]
 , packages = ./packages.dhall
