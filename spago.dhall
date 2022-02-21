@@ -1,6 +1,7 @@
 { name = "wordle-mastermind-solver"
 , dependencies =
   [ "arrays"
+  , "assert"
   , "console"
   , "effect"
   , "functions"
@@ -14,7 +15,8 @@
   , "random"
   , "strings"
   , "stringutils"
+  , "web-uievents"
   ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs" ]
+, sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }
