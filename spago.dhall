@@ -3,6 +3,7 @@
   [ "arrays"
   , "console"
   , "effect"
+  , "functions"
   , "halogen"
   , "lists"
   , "maybe"
