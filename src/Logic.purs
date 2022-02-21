@@ -15,6 +15,7 @@ import Data.List (List(..), fromFoldable)
 import Data.Map.Internal (Map, empty, insertWith, lookup)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String (Pattern(..), contains)
+import Data.String.CodeUnits as StringCodeUnits
 import Data.String.Utils (charAt, toCharArray)
 import Partial.Unsafe (unsafePartial)
 import Words as Words
@@ -52,7 +53,7 @@ type CharDetails
 validate_guess :: Word -> Boolean
 validate_guess word = correct_length && acceptable_word
   where
-  correct_length = length (toCharArray word) == 5
+  correct_length = StringCodeUnits.length word == 5
 
   acceptable_word = elem word Words.all_words
 
@@ -89,7 +90,7 @@ score_guess_impl guess answer = { guess: guess.text, score: { fully_correct, par
 
   fully_correct = count_true fully_correct_arr
 
-  partially_correct = count_true $ check_word_partial guess answer fully_correct_arr
+  partially_correct = if fully_correct == 5 then 0 else count_true $ check_word_partial guess answer fully_correct_arr
 
 check_word_exact :: Guess -> Word -> Array Boolean
 check_word_exact guess answer = mapWithIndex (\i c -> check_letter_exact i c answer) guess.chars
