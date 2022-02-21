@@ -19,7 +19,7 @@ type State
 
 data Action
   = InputEntered String
-  | SubmitGuess
+  | SubmitGuess String
 
 component :: forall q o m. H.Component q Input o m
 component =
@@ -31,10 +31,11 @@ component =
 
 render :: forall m. State -> H.ComponentHTML Action () m
 render state =
-  HH.div_
+  HH.div [ HP.classes [ HH.ClassName "container mx-auto" ] ]
     [ HH.div [ HP.classes [ HH.ClassName "flex flex-wrap px-4 py-2" ] ]
         [ HH.div [ HP.classes [ HH.ClassName "w-full md:w-1/2 mb-4" ] ]
-            [ HH.h3 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text "Guess the mystery 5-letter word" ]
+            [ heading "Guess the mystery 5-letter word"
+            , subheading "Enter a guess below or click one of the options"
             , HH.input
                 [ HP.type_ HP.InputText
                 , HE.onValueInput InputEntered
@@ -43,7 +44,7 @@ render state =
                 , HP.classes [ HH.ClassName "bg-gray-100 p-2 mr-3" ]
                 ]
             , HH.button
-                [ HE.onClick \_ -> SubmitGuess
+                [ HE.onClick \_ -> SubmitGuess state.guess
                 , HP.disabled wrong_length
                 , HP.classes [ HH.ClassName $ "text-white px-3 py-2 " <> if wrong_length then "bg-gray-400" else "bg-gray-700" ]
                 ]
@@ -61,14 +62,26 @@ render state =
                 )
             ]
         , HH.div [ HP.classes [ HH.ClassName "w-full md:w-1/2" ] ]
-            [ HH.h3_ [ HH.text "Remaining possible words" ]
-            , HH.div [ HP.classes [ HH.ClassName "text-gray-600 text-sm mb-2" ] ]
-                [ HH.text $ if count_possibilities == count_all then (show count_possibilities) <> " possibilities" else ((show count_possibilities) <> " possibilities, out of a total " <> (show count_all) <> " words") ]
+            [ heading "Remaining possible words"
+            , subheading
+                $ (show count_possibilities)
+                <> " possibilities"
+                <> ( if count_possibilities == count_all then
+                      ""
+                    else
+                      ("out of a total " <> (show count_all) <> " words")
+                  )
             , HH.div
-                [ HP.classes [ HH.ClassName "flex flex-wrap w-full" ]
+                [ HP.classes [ HH.ClassName "flex flex-wrap w-full -mx-1" ]
                 ]
                 ( map
-                    (\w -> HH.span [ HP.classes [ HH.ClassName "m-1" ] ] [ HH.text w ])
+                    ( \w ->
+                        HH.span
+                          [ HE.onClick \_ -> SubmitGuess w
+                          , HP.classes [ HH.ClassName "m-1 cursor-pointer hover:bg-gray-200" ]
+                          ]
+                          [ HH.text w ]
+                    )
                     $ words_list
                 )
             ]
@@ -92,7 +105,7 @@ render state =
 handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
 handleAction = case _ of
   InputEntered g -> H.modify_ \st -> st { guess = g }
-  SubmitGuess -> H.modify_ \st -> if Logic.validate_guess st.guess then handle_step st else st
+  SubmitGuess g -> H.modify_ \st -> if Logic.validate_guess g then handle_step $ st { guess = g } else st
 
 handle_step :: State -> State
 handle_step st = st { guess = "", guesses = guesses }
@@ -104,3 +117,9 @@ handle_step st = st { guess = "", guesses = guesses }
   filtered = Logic.filter_words checked words
 
   guesses = snoc st.guesses { guess: checked, filtered }
+
+heading text = HH.h3 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text text ]
+
+subheading text =
+  HH.div [ HP.classes [ HH.ClassName "text-gray-600 text-sm mb-2" ] ]
+    [ HH.text text ]
