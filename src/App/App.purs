@@ -8,6 +8,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Web.UIEvent.KeyboardEvent (key)
 import Logic as Logic
 import Words as Words
 
@@ -39,6 +40,8 @@ render state =
             , HH.input
                 [ HP.type_ HP.InputText
                 , HE.onValueInput InputEntered
+                -- not sure if there's a better way to do a no-op
+                , HE.onKeyDown \e -> if (key e) == "Enter" then SubmitGuess state.guess else InputEntered state.guess
                 , HP.value state.guess
                 , HP.required true
                 , HP.classes [ HH.ClassName "bg-gray-100 p-2 mr-3" ]
