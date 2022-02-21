@@ -50,8 +50,11 @@ type Answer
 type CharDetails
   = { char :: String, index :: Int, exact :: Boolean }
 
-validate_guess :: Word -> Boolean
-validate_guess word = correct_length && acceptable_word
+validate_guess :: Word -> Maybe String
+validate_guess word = case [ correct_length, acceptable_word ] of
+  [ true, true ] -> Nothing
+  [ false, _ ] -> Just "Your guess needs to be 5 letters long"
+  _ -> Just "That's not a word we recognise"
   where
   correct_length = StringCodeUnits.length word == 5
 

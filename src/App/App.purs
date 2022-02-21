@@ -2,7 +2,7 @@ module App.App where
 
 import Prelude
 import Data.Array (last, length, snoc)
-import Data.Maybe (maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.String.CodeUnits as StringCodeUnits
 import Halogen as H
 import Halogen.HTML as HH
@@ -16,7 +16,11 @@ type Input
   = { answer :: Logic.Word }
 
 type State
-  = { answer :: Logic.Word, guess :: String, guesses :: Array ({ guess :: Logic.CheckedGuess, filtered :: Logic.WordList }) }
+  = { answer :: Logic.Word
+    , guess :: String
+    , validation_errors :: Maybe String
+    , guesses :: Array ({ guess :: Logic.CheckedGuess, filtered :: Logic.WordList })
+    }
 
 data Action
   = InputEntered String
@@ -25,7 +29,7 @@ data Action
 component :: forall q o m. H.Component q Input o m
 component =
   H.mkComponent
-    { initialState: \{ answer } -> { answer, guess: "", guesses: [] }
+    { initialState: \{ answer } -> { answer, guess: "", validation_errors: Nothing, guesses: [] }
     , render
     , eval: H.mkEval H.defaultEval { handleAction = handleAction }
     }
@@ -37,21 +41,26 @@ render state =
         [ HH.div [ HP.classes [ HH.ClassName "w-full md:w-1/2 mb-4" ] ]
             [ heading "Guess the mystery 5-letter word"
             , subheading "Enter a guess below or click one of the options"
-            , HH.input
-                [ HP.type_ HP.InputText
-                , HE.onValueInput InputEntered
-                -- not sure if there's a better way to do a no-op
-                , HE.onKeyDown \e -> if (key e) == "Enter" then SubmitGuess state.guess else InputEntered state.guess
-                , HP.value state.guess
-                , HP.required true
-                , HP.classes [ HH.ClassName "bg-gray-100 p-2 mr-3" ]
+            , HH.div_
+                [ HH.input
+                    [ HP.type_ HP.InputText
+                    , HE.onValueInput InputEntered
+                    -- not sure if there's a better way to do a no-op
+                    , HE.onKeyDown \e -> if (key e) == "Enter" then SubmitGuess state.guess else InputEntered state.guess
+                    , HP.value state.guess
+                    , HP.required true
+                    , HP.classes [ HH.ClassName "bg-gray-100 p-2 mr-3" ]
+                    ]
+                , HH.button
+                    [ HE.onClick \_ -> SubmitGuess state.guess
+                    , HP.disabled wrong_length
+                    , HP.classes [ HH.ClassName $ "text-white px-3 py-2 " <> if wrong_length then "bg-gray-400" else "bg-gray-700" ]
+                    ]
+                    [ HH.text $ "Check guess" ]
                 ]
-            , HH.button
-                [ HE.onClick \_ -> SubmitGuess state.guess
-                , HP.disabled wrong_length
-                , HP.classes [ HH.ClassName $ "text-white px-3 py-2 " <> if wrong_length then "bg-gray-400" else "bg-gray-700" ]
-                ]
-                [ HH.text $ "Check guess" ]
+            , case state.validation_errors of
+                Nothing -> HH.div_ []
+                Just message -> HH.div [ HP.classes [ HH.ClassName "my-3 px-4 py-2 inline-block bg-red-100 text-red-800" ] ] [ HH.text message ]
             , HH.div_
                 ( map
                     ( \x ->
@@ -108,7 +117,10 @@ render state =
 handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
 handleAction = case _ of
   InputEntered g -> H.modify_ \st -> st { guess = g }
-  SubmitGuess g -> H.modify_ \st -> if Logic.validate_guess g then handle_step $ st { guess = g } else st
+  SubmitGuess g ->
+    H.modify_ \st -> case Logic.validate_guess g of
+      Nothing -> handle_step $ st { guess = g, validation_errors = Nothing }
+      Just message -> st { guess = g, validation_errors = Just message }
 
 handle_step :: State -> State
 handle_step st = st { guess = "", guesses = guesses }
