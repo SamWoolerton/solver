@@ -6,6 +6,7 @@
   , "effect"
   , "functions"
   , "halogen"
+  , "integers"
   , "lists"
   , "maybe"
   , "ordered-collections"
@@ -15,6 +16,7 @@
   , "random"
   , "strings"
   , "stringutils"
+  , "tuples"
   , "web-uievents"
   ]
 , packages = ./packages.dhall

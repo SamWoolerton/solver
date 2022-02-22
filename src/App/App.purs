@@ -1,15 +1,16 @@
 module App.App where
 
 import Prelude
-import Data.Array (last, length, snoc)
+import Data.Array (fromFoldable, last, length, slice, snoc)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String.CodeUnits as StringCodeUnits
 import Halogen as H
+import Halogen.HTML (HTML)
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Web.UIEvent.KeyboardEvent (key)
 import Logic as Logic
+import Web.UIEvent.KeyboardEvent (key)
 import Words as Words
 
 type Input
@@ -20,6 +21,7 @@ type State
     , guess :: String
     , validation_errors :: Maybe String
     , guesses :: Array ({ guess :: Logic.CheckedGuess, filtered :: Logic.WordList })
+    , entropy :: Array Logic.GuessEntropy
     }
 
 data Action
@@ -29,7 +31,16 @@ data Action
 component :: forall q o m. H.Component q Input o m
 component =
   H.mkComponent
-    { initialState: \{ answer } -> { answer, guess: "", validation_errors: Nothing, guesses: [] }
+    { initialState:
+        \{ answer } ->
+          { answer
+          , guess: ""
+          , validation_errors: Nothing
+          , guesses: []
+          , entropy:
+              Logic.calculate_entropy
+                $ slice 0 80 Words.valid_words
+          }
     , render
     , eval: H.mkEval H.defaultEval { handleAction = handleAction }
     }
@@ -72,6 +83,17 @@ render state =
                     )
                     $ state.guesses
                 )
+            , HH.div [ HP.classes [ HH.ClassName "flex flex-wrap" ] ]
+                ( map
+                    ( \w ->
+                        HH.span
+                          [ HP.classes [ HH.ClassName "m-1" ]
+                          ]
+                          [ HH.text $ "{guess: " <> w.guess, HH.text $ ", entropy: " <> (show w.entropy) <> "}," ]
+                    )
+                    $ ( state.entropy
+                      )
+                )
             ]
         , HH.div [ HP.classes [ HH.ClassName "w-full md:w-1/2" ] ]
             [ heading "Remaining possible words"
@@ -86,16 +108,17 @@ render state =
             , HH.div
                 [ HP.classes [ HH.ClassName "flex flex-wrap w-full -mx-1" ]
                 ]
-                ( map
-                    ( \w ->
-                        HH.span
-                          [ HE.onClick \_ -> SubmitGuess w
-                          , HP.classes [ HH.ClassName "m-1 cursor-pointer hover:bg-gray-200" ]
-                          ]
-                          [ HH.text w ]
-                    )
-                    $ words_list
-                )
+                -- ( map
+                --     ( \w ->
+                --         HH.span
+                --           [ HE.onClick \_ -> SubmitGuess w
+                --           , HP.classes [ HH.ClassName "m-1 cursor-pointer hover:bg-gray-200" ]
+                --           ]
+                --           [ HH.text w ]
+                --     )
+                --     $ words_list
+                -- )
+                []
             ]
         ]
     , HH.div [ HP.classes [ HH.ClassName "p-2 text-center" ] ]
@@ -133,8 +156,10 @@ handle_step st = st { guess = "", guesses = guesses }
 
   guesses = snoc st.guesses { guess: checked, filtered }
 
+heading ∷ ∀ (t1 ∷ Type) (t2 ∷ Type). String → HTML t1 t2
 heading text = HH.h3 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text text ]
 
+subheading ∷ ∀ (t1 ∷ Type) (t2 ∷ Type). String → HTML t1 t2
 subheading text =
   HH.div [ HP.classes [ HH.ClassName "text-gray-600 text-sm mb-2" ] ]
     [ HH.text text ]

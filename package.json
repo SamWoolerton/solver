@@ -6,6 +6,7 @@
     "spago": "^0.19.1"
   },
   "scripts": {
+    "start": "npm run serve",
     "build": "spago build",
     "test": "spago test",
     "serve": "parcel dev/index.html --open",
