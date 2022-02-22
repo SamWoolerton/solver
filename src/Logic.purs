@@ -57,7 +57,7 @@ type CharDetails
   = { char :: String, index :: Int, exact :: Boolean }
 
 type GuessEntropy
-  = { guess :: Word, entropy :: Number }
+  = Tuple Word Number
 
 validate_guess :: Word -> Maybe String
 validate_guess word = case [ correct_length, acceptable_word ] of
@@ -80,7 +80,7 @@ calculate_entropy_ls arr = entropy
   where
   entropy = map calc_entropy $ toUnfoldable agg_map
 
-  calc_entropy (Tuple guess { sum, count }) = { guess, entropy: log2 $ (sum / count) }
+  calc_entropy (Tuple guess { sum, count }) = Tuple guess (log2 $ (sum / count))
 
   agg_map = agg probabilities empty
 

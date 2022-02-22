@@ -1,9 +1,13 @@
 module App.App where
 
 import Prelude
-import Data.Array (fromFoldable, last, length, slice, snoc)
+import Data.Array (catMaybes, last, length, snoc)
+import Data.Entropy as Entropy
+import Data.Map (lookup)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String.CodeUnits as StringCodeUnits
+import Data.Tuple (Tuple(..), fst)
+import Data.Words as Words
 import Halogen as H
 import Halogen.HTML (HTML)
 import Halogen.HTML as HH
@@ -11,7 +15,6 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Logic as Logic
 import Web.UIEvent.KeyboardEvent (key)
-import Data.Words as Words
 
 type Input
   = { answer :: Logic.Word }
@@ -20,8 +23,7 @@ type State
   = { answer :: Logic.Word
     , guess :: String
     , validation_errors :: Maybe String
-    , guesses :: Array ({ guess :: Logic.CheckedGuess, filtered :: Logic.WordList })
-    , entropy :: Array Logic.GuessEntropy
+    , guesses :: Array ({ guess :: Logic.CheckedGuess, filtered :: Array Entropy.Entropy })
     }
 
 data Action
@@ -37,9 +39,6 @@ component =
           , guess: ""
           , validation_errors: Nothing
           , guesses: []
-          , entropy:
-              Logic.calculate_entropy
-                $ slice 0 80 Words.valid_words
           }
     , render
     , eval: H.mkEval H.defaultEval { handleAction = handleAction }
@@ -83,17 +82,6 @@ render state =
                     )
                     $ state.guesses
                 )
-            , HH.div [ HP.classes [ HH.ClassName "flex flex-wrap" ] ]
-                ( map
-                    ( \w ->
-                        HH.span
-                          [ HP.classes [ HH.ClassName "m-1" ]
-                          ]
-                          [ HH.text $ "{guess: " <> w.guess, HH.text $ ", entropy: " <> (show w.entropy) <> "}," ]
-                    )
-                    $ ( state.entropy
-                      )
-                )
             ]
         , HH.div [ HP.classes [ HH.ClassName "w-full md:w-1/2" ] ]
             [ heading "Remaining possible words"
@@ -108,17 +96,16 @@ render state =
             , HH.div
                 [ HP.classes [ HH.ClassName "flex flex-wrap w-full -mx-1" ]
                 ]
-                -- ( map
-                --     ( \w ->
-                --         HH.span
-                --           [ HE.onClick \_ -> SubmitGuess w
-                --           , HP.classes [ HH.ClassName "m-1 cursor-pointer hover:bg-gray-200" ]
-                --           ]
-                --           [ HH.text w ]
-                --     )
-                --     $ words_list
-                -- )
-                []
+                ( map
+                    ( \(Tuple guess entropy) ->
+                        HH.span
+                          [ HE.onClick \_ -> SubmitGuess guess
+                          , HP.classes [ HH.ClassName "m-1 cursor-pointer hover:bg-gray-200" ]
+                          ]
+                          [ HH.text guess ]
+                    )
+                    $ words_list
+                )
             ]
         ]
     , HH.div [ HP.classes [ HH.ClassName "p-2 text-center" ] ]
@@ -129,7 +116,7 @@ render state =
         ]
     ]
   where
-  words_list = maybe Words.valid_words (\m -> m.filtered) (last state.guesses)
+  words_list = maybe Entropy.entropy_arr (\m -> m.filtered) (last state.guesses)
 
   count_possibilities = length words_list
 
@@ -150,11 +137,19 @@ handle_step st = st { guess = "", guesses = guesses }
   where
   checked = Logic.score_guess st.guess st.answer
 
-  words = maybe Words.valid_words (\m -> m.filtered) (last st.guesses)
+  words = maybe Entropy.entropy_arr (\m -> m.filtered) (last st.guesses)
 
-  filtered = Logic.filter_words checked words
+  filtered = Logic.filter_words checked $ map fst words
 
-  guesses = snoc st.guesses { guess: checked, filtered }
+  with_entropy =
+    -- use pre-calculated entropy figures
+    if length filtered > 60 then
+      catMaybes $ map (\w -> (\e -> Tuple w e) <$> (lookup w Entropy.entropy_map)) filtered
+    else
+      -- few enough to run this synchronously
+      Logic.calculate_entropy filtered
+
+  guesses = snoc st.guesses { guess: checked, filtered: with_entropy }
 
 heading ∷ ∀ (t1 ∷ Type) (t2 ∷ Type). String → HTML t1 t2
 heading text = HH.h3 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text text ]

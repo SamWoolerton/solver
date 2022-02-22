@@ -4,10 +4,13 @@ import Data.Map (Map)
 import Data.Map.Internal (fromFoldable)
 import Data.Tuple (Tuple(..))
 
+type Entropy
+  = (Tuple String Number)
+
 entropy_map :: Map String Number
 entropy_map = fromFoldable entropy_arr
 
-entropy_arr :: Array (Tuple String Number)
+entropy_arr :: Array Entropy
 entropy_arr =
   [ (Tuple "aback" 3.7004397181410886)
   , (Tuple "abase" 3.906890595608552)
