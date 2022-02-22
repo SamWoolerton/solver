@@ -11,7 +11,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Logic as Logic
 import Web.UIEvent.KeyboardEvent (key)
-import Words as Words
+import Data.Words as Words
 
 type Input
   = { answer :: Logic.Word }

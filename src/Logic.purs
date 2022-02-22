@@ -24,7 +24,7 @@ import Data.String.Utils (charAt, toCharArray)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Utility (log2)
-import Words as Words
+import Data.Words as Words
 
 type Word
   = String

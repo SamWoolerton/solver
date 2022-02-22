@@ -8,7 +8,7 @@ import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
 import Data.Array (length, unsafeIndex)
 import Partial.Unsafe (unsafePartial)
-import Words as Words
+import Data.Words as Words
 import Logic as Logic
 
 main :: Effect Unit

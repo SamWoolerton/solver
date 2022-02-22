@@ -1,4 +1,4 @@
-module Words where
+module Data.Words where
 
 import Prelude
 
