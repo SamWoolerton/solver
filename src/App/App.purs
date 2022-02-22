@@ -1,12 +1,12 @@
 module App.App where
 
 import Prelude
-import Data.Array (catMaybes, last, length, snoc)
+import Data.Array (catMaybes, last, length, slice, snoc, sortBy)
 import Data.Entropy as Entropy
 import Data.Map (lookup)
 import Data.Maybe (Maybe(..), maybe)
 import Data.String.CodeUnits as StringCodeUnits
-import Data.Tuple (Tuple(..), fst)
+import Data.Tuple (Tuple(..), fst, snd)
 import Data.Words as Words
 import Halogen as H
 import Halogen.HTML (HTML)
@@ -86,25 +86,32 @@ render state =
         , HH.div [ HP.classes [ HH.ClassName "w-full md:w-1/2" ] ]
             [ heading "Remaining possible words"
             , subheading
-                $ (show count_possibilities)
+                $ (if count_possibilities > 30 then "Showing the top 30 of " else "")
+                <> (show count_possibilities)
                 <> " possibilities"
                 <> ( if count_possibilities == count_all then
                       ""
                     else
-                      ("out of a total " <> (show count_all) <> " words")
+                      (", out of a total " <> (show count_all) <> " words")
                   )
             , HH.div
-                [ HP.classes [ HH.ClassName "flex flex-wrap w-full -mx-1" ]
+                [ HP.classes [ HH.ClassName "w-full" ]
                 ]
                 ( map
                     ( \(Tuple guess entropy) ->
-                        HH.span
+                        HH.div
                           [ HE.onClick \_ -> SubmitGuess guess
-                          , HP.classes [ HH.ClassName "m-1 cursor-pointer hover:bg-gray-200" ]
+                          , HP.classes [ HH.ClassName "my-1 px-3 py-2 cursor-pointer hover:bg-gray-200 shadow-md flex items-center" ]
                           ]
-                          [ HH.text guess ]
+                          [ HH.div [ HP.classes [ HH.ClassName "w-12 mr-2" ] ] [ HH.text guess ]
+                          , HH.div
+                              [ HP.classes [ HH.ClassName "h-4" ]
+                              , HP.style ("background-color: hsl(216deg " <> (show (entropy * 0.6 + 15.0)) <> "% 50%); width: " <> (show entropy) <> "%;")
+                              ]
+                              []
+                          ]
                     )
-                    $ words_list
+                    $ slice 0 30 words_list
                 )
             ]
         ]
@@ -116,7 +123,7 @@ render state =
         ]
     ]
   where
-  words_list = maybe Entropy.entropy_arr (\m -> m.filtered) (last state.guesses)
+  words_list = sortBy (\a b -> compare (snd b) (snd a)) $ maybe (Logic.normalise_entropy Entropy.entropy_arr) (\m -> m.filtered) (last state.guesses)
 
   count_possibilities = length words_list
 
@@ -149,7 +156,7 @@ handle_step st = st { guess = "", guesses = guesses }
       -- few enough to run this synchronously
       Logic.calculate_entropy filtered
 
-  guesses = snoc st.guesses { guess: checked, filtered: with_entropy }
+  guesses = snoc st.guesses { guess: checked, filtered: Logic.normalise_entropy with_entropy }
 
 heading ∷ ∀ (t1 ∷ Type) (t2 ∷ Type). String → HTML t1 t2
 heading text = HH.h3 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text text ]

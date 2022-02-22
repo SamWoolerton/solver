@@ -7,6 +7,7 @@ module Logic
   , calculate_entropy
   , filter_words
   , is_correct_guess
+  , normalise_entropy
   , score_guess
   , validate_guess
   ) where
@@ -14,17 +15,18 @@ module Logic
 import Prelude
 import Data.Array (any, elem, filter, length, mapWithIndex, nub, unsafeIndex)
 import Data.Array as Arr
+import Data.Foldable (maximum, minimum)
 import Data.Int (toNumber)
 import Data.List (List(..), fromFoldable)
 import Data.Map.Internal (Map, empty, insertWith, lookup, toUnfoldable)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String (Pattern(..), contains)
 import Data.String.CodeUnits as StringCodeUnits
 import Data.String.Utils (charAt, toCharArray)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), snd)
+import Data.Words as Words
 import Partial.Unsafe (unsafePartial)
 import Utility (log2)
-import Data.Words as Words
 
 type Word
   = String
@@ -71,6 +73,23 @@ validate_guess word = case [ correct_length, acceptable_word ] of
 
 is_correct_guess :: CheckedGuess -> Boolean
 is_correct_guess checked_guess = checked_guess.score.fully_correct == 5
+
+normalise :: Number -> Number -> Number -> Number -> Number -> Number
+normalise val min_current max_current min_next max_next =
+  let
+    stripped = (val - min_current) / (max_current - min_current)
+  in
+    (stripped * (max_next - min_next)) + min_next
+
+-- change range from e.g. 3.3-4.5 to 10-100
+normalise_entropy :: Array GuessEntropy -> Array GuessEntropy
+normalise_entropy arr = map (\(Tuple guess entropy) -> (Tuple guess (normalise entropy min_entropy max_entropy 10.0 100.0))) arr
+  where
+  entropy_arr = map snd arr
+
+  min_entropy = fromMaybe 0.0 $ minimum entropy_arr
+
+  max_entropy = fromMaybe 10.0 $ maximum entropy_arr
 
 calculate_entropy :: WordList -> Array GuessEntropy
 calculate_entropy arr = Arr.fromFoldable $ calculate_entropy_ls arr
