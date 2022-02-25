@@ -19,10 +19,17 @@ import Web.UIEvent.KeyboardEvent (key)
 type Input
   = { answer :: Logic.Word }
 
-type State
+type ActiveState
   = { answer :: Logic.Word
     , guess :: String
     , validation_errors :: Maybe String
+    , guesses :: Array ({ guess :: Logic.CheckedGuess, filtered :: Array Entropy.Entropy })
+    }
+
+data State
+  = Active ActiveState
+  | Completed
+    { answer :: Logic.Word
     , guesses :: Array ({ guess :: Logic.CheckedGuess, filtered :: Array Entropy.Entropy })
     }
 
@@ -35,17 +42,18 @@ component =
   H.mkComponent
     { initialState:
         \{ answer } ->
-          { answer
-          , guess: ""
-          , validation_errors: Nothing
-          , guesses: []
-          }
+          Active
+            { answer
+            , guess: ""
+            , validation_errors: Nothing
+            , guesses: []
+            }
     , render
     , eval: H.mkEval H.defaultEval { handleAction = handleAction }
     }
 
 render :: forall m. State -> H.ComponentHTML Action () m
-render state =
+render (Active state) =
   HH.div [ HP.classes [ HH.ClassName "container mx-auto" ] ]
     [ HH.div [ HP.classes [ HH.ClassName "flex flex-wrap px-4 py-2" ] ]
         [ HH.div [ HP.classes [ HH.ClassName "w-full md:w-1/2 mb-4" ] ]
@@ -115,20 +123,7 @@ render state =
                 )
             ]
         ]
-    , HH.div [ HP.classes [ HH.ClassName "px-2 py-4 my-6 text-center" ] ]
-        [ HH.div_
-            [ HH.text "Credit for the game mode at "
-            , HH.a [ HP.href "https://playhurdle.vercel.app/", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "Hurdle" ]
-            , HH.text ", and how to estimate entropy from "
-            , HH.a [ HP.href "https://www.youtube.com/watch?v=v68zYyaEmEA", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "3Blue1Brown" ]
-            , HH.text "."
-            ]
-        , HH.div_
-            [ HH.text "Check out the "
-            , HH.a [ HP.href "https://github.com/SamWoolerton/solver", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "source code" ]
-            , HH.text "."
-            ]
-        ]
+    , credits
     ]
   where
   words_list = sortBy (\a b -> compare (snd b) (snd a)) $ maybe (Logic.normalise_entropy Entropy.entropy_arr) (\m -> m.filtered) (last state.guesses)
@@ -139,16 +134,45 @@ render state =
 
   wrong_length = (StringCodeUnits.length state.guess) /= 5
 
+render (Completed state) =
+  HH.div [ HP.classes [ HH.ClassName "container mx-auto" ] ]
+    [ HH.div [ HP.classes [ HH.ClassName "flex flex-wrap px-4 py-2" ] ]
+        [ HH.div [ HP.classes [ HH.ClassName "w-full md:w-1/2 mb-4" ] ]
+            [ heading $ "You guessed the word in " <> (show $ length state.guesses) <> " guesses"
+            , HH.div_
+                ( map
+                    ( \x ->
+                        HH.div [ HP.classes [ HH.ClassName "mt-3 flex" ] ]
+                          [ HH.div [ HP.classes [ HH.ClassName "px-3 py-1" ] ] [ HH.text x.guess.guess ]
+                          , HH.div [ HP.classes [ HH.ClassName "px-3 py-1 bg-green-200" ] ] [ HH.text $ show x.guess.score.fully_correct ]
+                          , HH.div [ HP.classes [ HH.ClassName "px-3 py-1 bg-orange-200" ] ] [ HH.text $ show x.guess.score.partially_correct ]
+                          ]
+                    )
+                    $ state.guesses
+                )
+            ]
+        ]
+    , credits
+    ]
+
 handleAction :: forall output m. Action -> H.HalogenM State Action () output m Unit
 handleAction = case _ of
-  InputEntered g -> H.modify_ \st -> st { guess = g }
+  InputEntered g ->
+    H.modify_ \s -> case s of
+      Completed _ -> s
+      Active st -> Active $ st { guess = g }
   SubmitGuess g ->
-    H.modify_ \st -> case Logic.validate_guess g of
-      Nothing -> handle_step $ st { guess = g, validation_errors = Nothing }
-      Just message -> st { guess = g, validation_errors = Just message }
+    H.modify_ \s -> case s, Logic.validate_guess g of
+      (Completed st), _ -> Completed st
+      (Active st), Nothing -> handle_step $ st { guess = g, validation_errors = Nothing }
+      (Active st), (Just message) -> Active $ st { guess = g, validation_errors = Just message }
 
-handle_step :: State -> State
-handle_step st = st { guess = "", guesses = guesses }
+handle_step :: ActiveState -> State
+handle_step st =
+  if checked.score.fully_correct == 5 then
+    Completed { answer: st.answer, guesses }
+  else
+    Active st { guess = "", guesses = guesses }
   where
   checked = Logic.score_guess st.guess st.answer
 
@@ -173,3 +197,20 @@ subheading ∷ ∀ (t1 ∷ Type) (t2 ∷ Type). String → HTML t1 t2
 subheading text =
   HH.div [ HP.classes [ HH.ClassName "text-gray-600 text-sm mb-2" ] ]
     [ HH.text text ]
+
+credits ∷ ∀ (t1 ∷ Type) (t2 ∷ Type). HTML t1 t2
+credits =
+  HH.div [ HP.classes [ HH.ClassName "px-2 py-4 my-6 text-center" ] ]
+    [ HH.div_
+        [ HH.text "Credit for the game mode at "
+        , HH.a [ HP.href "https://playhurdle.vercel.app/", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "Hurdle" ]
+        , HH.text ", and how to estimate entropy from "
+        , HH.a [ HP.href "https://www.youtube.com/watch?v=v68zYyaEmEA", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "3Blue1Brown" ]
+        , HH.text "."
+        ]
+    , HH.div_
+        [ HH.text "Check out the "
+        , HH.a [ HP.href "https://github.com/SamWoolerton/solver", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "source code" ]
+        , HH.text "."
+        ]
+    ]
