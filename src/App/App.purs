@@ -115,11 +115,19 @@ render state =
                 )
             ]
         ]
-    , HH.div [ HP.classes [ HH.ClassName "p-2 text-center" ] ]
-        [ HH.text "Credit for the game mode at "
-        , HH.a [ HP.href "https://playhurdle.vercel.app/", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "Hurdle" ]
-        , HH.text ", and how to estimate entropy from "
-        , HH.a [ HP.href "https://www.youtube.com/watch?v=v68zYyaEmEA", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "3Blue1Brown" ]
+    , HH.div [ HP.classes [ HH.ClassName "px-2 py-4 my-6 text-center" ] ]
+        [ HH.div_
+            [ HH.text "Credit for the game mode at "
+            , HH.a [ HP.href "https://playhurdle.vercel.app/", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "Hurdle" ]
+            , HH.text ", and how to estimate entropy from "
+            , HH.a [ HP.href "https://www.youtube.com/watch?v=v68zYyaEmEA", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "3Blue1Brown" ]
+            , HH.text "."
+            ]
+        , HH.div_
+            [ HH.text "Check out the "
+            , HH.a [ HP.href "https://github.com/SamWoolerton/solver", HP.classes [ HH.ClassName "text-blue-700 font-bold" ] ] [ HH.text "source code" ]
+            , HH.text "."
+            ]
         ]
     ]
   where
